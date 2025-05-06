@@ -1,0 +1,78 @@
+version: "3"
+
+services:
+  python-app:
+    container_name: python-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./app:/app
+    command: ["tail", "-f", "/dev/null"]
+    networks:
+      - DB-network
+    depends_on:
+      - redis-master-node
+      - redis-replica-node
+      - mysql-db
+      - mongodb-db
+  
+  redis-master-node:
+    container_name: redis-master-node
+    image: redis:latest
+    restart: always
+    ports:
+      - "7001:6379"
+    volumes:
+      - redis-master-node-data:/data
+    networks:
+      - DB-network
+  
+  redis-replica-node:
+    container_name: redis-replica-node
+    image: redis:latest
+    restart: always
+    ports:
+      - "7002:6379"
+    volumes:
+      - redis-replica-node-data:/data
+    networks:
+      - DB-network
+    command: ["redis-server", "--slaveof", "redis-master-node", "6379"]
+    depends_on:
+      - redis-master-node
+
+  mysql-db:
+    container_name: mysql-db
+    image: mysql:latest
+    restart: always
+    ports:
+      - "7003:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: webshop_db
+    volumes:
+      - mysql-db-data:/var/lib/mysql
+    networks:
+      - DB-network
+
+  mongodb-db:
+    container_name: mongodb-db
+    image: mongo:latest
+    restart: always
+    ports:
+      - "7004:27017"
+    volumes:
+      - mongodb-db-data:/data/db
+    networks:
+      - DB-network
+
+volumes:
+  redis-master-node-data:
+  redis-replica-node-data:
+  mysql-db-data:
+  mongodb-db-data:
+
+networks:
+  DB-network:
+    driver: bridge
