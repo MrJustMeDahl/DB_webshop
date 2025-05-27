@@ -24,20 +24,6 @@ CREATE TABLE `order` (
   CONSTRAINT `customer_id` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-DROP TABLE IF EXISTS `order_lines`;
-
-CREATE TABLE `order_lines` (
-  `order_id` int NOT NULL,
-  `product_id` int NOT NULL,
-  `quantity` int NOT NULL,
-  `price` float NOT NULL,
-  PRIMARY KEY (`order_id`,`product_id`),
-  KEY `product_id_idx` (`product_id`),
-  CONSTRAINT `order_id_lines` FOREIGN KEY (`order_id`) REFERENCES `order` (`order_id`),
-  CONSTRAINT `product_id` FOREIGN KEY (`product_id`) REFERENCES `product` (`product_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-
 DROP TABLE IF EXISTS `payment`;
 
 CREATE TABLE `payment` (
@@ -70,4 +56,18 @@ CREATE TABLE `review` (
   KEY `customer_id_review_idx` (`customer_id`),
   CONSTRAINT `customer_id_review` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`customer_id`),
   CONSTRAINT `product_id_review` FOREIGN KEY (`product_id`) REFERENCES `product` (`product_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+DROP TABLE IF EXISTS `order_lines`;
+
+CREATE TABLE `order_lines` (
+  `order_id` int NOT NULL,
+  `product_id` int NOT NULL,
+  `quantity` int NOT NULL,
+  `price` float NOT NULL,
+  PRIMARY KEY (`order_id`,`product_id`),
+  KEY `product_id_idx` (`product_id`),
+  CONSTRAINT `order_id_lines` FOREIGN KEY (`order_id`) REFERENCES `order` (`order_id`),
+  CONSTRAINT `product_id` FOREIGN KEY (`product_id`) REFERENCES `product` (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
