@@ -7,10 +7,10 @@ SELECT 'raw_data rows' AS label, COUNT(*) AS total FROM raw_data;
 SELECT 'customers' AS label, COUNT(*) AS total FROM customer;
 
 -- Products
-SELECT 'products' AS label, COUNT(*) AS total FROM product;
+SELECT 'products' AS label, COUNT(*) AS total FROM products;
 
 -- Orders
-SELECT 'orders' AS label, COUNT(*) AS total FROM `order`;
+SELECT 'orders' AS label, COUNT(*) AS total FROM `orders`;
 
 -- Order Lines
 SELECT 'order_lines' AS label, COUNT(*) AS total FROM order_lines;
