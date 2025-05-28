@@ -1,6 +1,6 @@
-from db_connectors.connect_mysql import connect_mysql
-from db_connectors.connect_mongodb import connect_mongodb
-from db_connectors.connect_redis import connect_redis
+from database.db_connectors.connect_mysql import connect_mysql
+from database.db_connectors.connect_mongodb import connect_mongodb
+from database.db_connectors.connect_redis import connect_redis
 
 def main():
     mysql_conn = connect_mysql()
