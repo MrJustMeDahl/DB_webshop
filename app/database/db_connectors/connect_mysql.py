@@ -12,3 +12,4 @@ def connect_mysql():
     except mysql.connector.Error as err:
         print(f"MySQL connection error: {err}")
         return None
+    
