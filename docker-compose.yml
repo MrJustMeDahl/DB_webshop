@@ -16,7 +16,7 @@ services:
       - redis-replica-node
       - mysql-db
       - mongodb-db
-  
+
   redis-master-node:
     container_name: redis-master-node
     image: redis:latest
@@ -27,7 +27,7 @@ services:
       - redis-master-node-data:/data
     networks:
       - DB-network
-  
+
   redis-replica-node:
     container_name: redis-replica-node
     image: redis:latest
@@ -53,6 +53,7 @@ services:
       MYSQL_DATABASE: webshop_db
     volumes:
       - mysql-db-data:/var/lib/mysql
+      - ./data:/var/lib/mysql-files
     networks:
       - DB-network
 
