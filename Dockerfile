@@ -4,5 +4,6 @@ FROM python:3.11-slim
 RUN pip install redis==5.2.1
 RUN pip install mysql-connector-python==9.3.0
 RUN pip install pymongo==4.12.1
+RUN pip install lorem-text==3.0
 
 WORKDIR /app
