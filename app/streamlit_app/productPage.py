@@ -1,5 +1,5 @@
 import streamlit as st
-import mysql.connector
+from database.db_connectors.connect_mysql import connect_mysql
 
 # DB config
 DB_HOST = "localhost"
@@ -10,19 +10,11 @@ DB_NAME = "webshop_db"
 
 
 
-# Connect to DB
-def connect_db():
-    return mysql.connector.connect(
-        host=DB_HOST,
-        port=DB_PORT,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        database=DB_NAME
-    )
-
 # Count total number of products
 def get_total_product_count():
-    conn = connect_db()
+    conn = connect_mysql()
+    if not conn:
+        return 0
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM products")
     count = cursor.fetchone()[0]
@@ -31,7 +23,9 @@ def get_total_product_count():
 
 # Fetch products for a specific page
 def get_products(offset, limit):
-    conn = connect_db()
+    conn = connect_mysql()
+    if not conn:
+        return []
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
         "SELECT product_id, description, price FROM products LIMIT %s OFFSET %s",

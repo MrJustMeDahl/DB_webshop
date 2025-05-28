@@ -11,12 +11,12 @@ st.set_page_config(
 # Now import other Streamlit-dependent modules
 from st_pages import add_page_title, get_nav_from_toml
 
+
 import os
 
-currentDir = os.getcwd()
-toml_path = os.path.join(currentDir, "pages_sections.toml")
-
-nav = get_nav_from_toml("pages_sections.toml")
+base_dir = os.path.dirname(__file__)
+toml_path = os.path.join(base_dir, "pages_sections.toml")
+nav = get_nav_from_toml(toml_path)
 if nav:
     pg = st.navigation(nav)
     add_page_title(pg)

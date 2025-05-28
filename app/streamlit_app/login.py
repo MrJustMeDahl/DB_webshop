@@ -1,17 +1,12 @@
 import streamlit as st
-import mysql.connector
+from database.db_connectors import connect_mysql
 
-def connect_db():
-    return mysql.connector.connect(
-        host="localhost",
-        port=7003,
-        user="root",
-        password="rootpassword",
-        database="webshop_db"
-    )
+
 
 def login(username, password):
-    conn = connect_db()
+    conn = connect_mysql()
+    if not conn:
+        return False
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM customer WHERE username=%s AND password=%s", (username, password))
     user = cursor.fetchone()
