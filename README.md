@@ -2,19 +2,19 @@
 
 DB exam project - creating a webshop using 3 different databases in an appropriate manner.
 
-### mysql setup
-
 ```
 docker compose down
 docker compose up --build -d
 ```
+
+### mysql setup
 
 ### Data insert with dump file
 
 run the following file in mysql workbench:
 
 ```
-/app/database/init/webshop_sql_dump.sql
+webshop_sql_dump2.sql
 ```
 
 ### Data insert without dump file
