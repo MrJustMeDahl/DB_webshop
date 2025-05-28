@@ -71,3 +71,31 @@ CREATE TABLE `order_lines` (
   CONSTRAINT `order_id_lines` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
   CONSTRAINT `product_id` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Triggers:
+
+DELIMITER $$
+
+CREATE TRIGGER set_order_dateset_created_atset_order_date
+BEFORE INSERT ON orders
+FOR EACH ROW 
+BEGIN
+    IF NEW.order_date IS NULL THEN
+		SET NEW.order_date = NOW();
+	END IF;
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE TRIGGER set_date_paid
+BEFORE INSERT ON payments
+FOR EACH ROW 
+BEGIN
+    IF NEW.date_paid IS NULL THEN
+		SET NEW.date_paid = NOW();
+	END IF;
+END $$
+
+DELIMITER ;
