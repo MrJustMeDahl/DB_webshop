@@ -38,19 +38,19 @@ CREATE TABLE `payments` (
 DROP TABLE IF EXISTS `product`;
 
 CREATE TABLE `products` (
-  `product_id` int NOT NULL,
-  `description` varchar(45) NOT NULL,
-  `price` float NOT NULL,
+  `product_id` VARCHAR(20) NOT NULL,
+  `description` VARCHAR(45) NOT NULL,
+  `price` FLOAT NOT NULL,
   PRIMARY KEY (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 DROP TABLE IF EXISTS `review`;
 
 CREATE TABLE `reviews` (
-  `review_id` varchar(45) NOT NULL,
-  `rating` float NOT NULL,
-  `customer_id` int NOT NULL,
-  `product_id` int NOT NULL,
+  `review_id` VARCHAR(45) NOT NULL,
+  `rating` FLOAT NOT NULL,
+  `customer_id` INT NOT NULL,
+  `product_id` VARCHAR(20) NOT NULL,
   PRIMARY KEY (`review_id`),
   KEY `product_id_review_idx` (`product_id`),
   KEY `customer_id_review_idx` (`customer_id`),
@@ -59,18 +59,20 @@ CREATE TABLE `reviews` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 
+
 DROP TABLE IF EXISTS `order_lines`;
 
 CREATE TABLE `order_lines` (
-  `order_id` int NOT NULL,
-  `product_id` int NOT NULL,
-  `quantity` int NOT NULL,
-  `price` float NOT NULL,
-  PRIMARY KEY (`order_id`,`product_id`),
+  `order_id` INT NOT NULL,
+  `product_id` VARCHAR(20) NOT NULL,
+  `quantity` INT NOT NULL,
+  `price` FLOAT NOT NULL,
+  PRIMARY KEY (`order_id`, `product_id`),
   KEY `product_id_idx` (`product_id`),
   CONSTRAINT `order_id_lines` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
   CONSTRAINT `product_id` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 
 -- Triggers:
 
