@@ -102,6 +102,54 @@ END $$
 
 DELIMITER ;
 
+DELIMITER $$
+USE webshop_db$$
+CREATE TRIGGER update_order_total_price
+AFTER INSERT ON order_lines
+FOR EACH ROW
+BEGIN 
+	UPDATE orders
+    SET total_price = (
+		SELECT IFNULL(SUM(ol.price * ol.quantity), 0)
+        FROM order_lines ol
+        WHERE ol.order_id = NEW.order_id
+    )
+    WHERE order_id = NEW.order_id;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+USE webshop_db$$
+CREATE TRIGGER update_order_total_price_update
+AFTER UPDATE ON order_lines
+FOR EACH ROW
+BEGIN 
+	UPDATE orders
+    SET total_price = (
+		SELECT IFNULL(SUM(ol.price * ol.quantity), 0)
+        FROM order_lines ol
+        WHERE ol.order_id = NEW.order_id
+    )
+    WHERE order_id = NEW.order_id;
+END$$
+DELIMITER ;
+
+DELIMITER $$
+USE webshop_db$$
+CREATE TRIGGER update_order_total_price_delete
+AFTER DELETE ON order_lines
+FOR EACH ROW
+BEGIN 
+	UPDATE orders
+    SET total_price = (
+		SELECT IFNULL(SUM(ol.price * ol.quantity), 0)
+        FROM order_lines ol
+        WHERE ol.order_id = OLD.order_id
+    )
+    WHERE order_id = OLD.order_id;
+END$$
+DELIMITER ;
+
 -- Stored Procedures:
 
 DROP procedure IF EXISTS `pagination`;
