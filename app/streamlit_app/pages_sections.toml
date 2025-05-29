@@ -1,0 +1,14 @@
+[[pages]]
+name = "Section"
+is_section = true
+icon = ""
+
+[[pages]]
+path = "login.py"
+name = "Login"
+icon = ""
+
+[[pages]]
+path = "productPage.py"
+name = "Webshop"
+icon = ""

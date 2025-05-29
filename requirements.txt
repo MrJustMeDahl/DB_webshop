@@ -3,3 +3,6 @@ pymongo==4.12.1
 redis==5.2.1
 pandas==2.2.3
 lorem-text==3.0
+st-pages==1.0.1
+streamlit==1.45.0
+mysql-connector-python==9.3.0

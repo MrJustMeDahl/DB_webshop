@@ -6,7 +6,12 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./app:/app
-    command: /bin/bash -c "python3 -m database.init.review_init && tail -f /dev/null"
+    working_dir: /app
+    command: sh -c "python3 -m database.init.review_init && streamlit run streamlit_app/start.py"
+    ports:
+      - "8501:8501"
+    environment:
+      - PYTHONPATH=/app
     networks:
       - DB-network
     depends_on:
@@ -14,6 +19,7 @@ services:
       - redis-replica-node
       - mysql-db
       - mongodb-db
+
 
   redis-master-node:
     container_name: redis-master-node
