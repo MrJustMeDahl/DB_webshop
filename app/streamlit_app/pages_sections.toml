@@ -12,3 +12,8 @@ icon = ""
 path = "productPage.py"
 name = "Webshop"
 icon = ""
+
+[[pages]]
+path = "cart.py"
+name = "Cart"
+icon = ""

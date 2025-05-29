@@ -1,5 +1,5 @@
 import streamlit as st
-from database.db_connectors import connect_mysql
+from database.db_connectors.connect_mysql import connect_mysql
 
 
 

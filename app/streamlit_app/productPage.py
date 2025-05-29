@@ -1,5 +1,7 @@
 import streamlit as st
 from database.db_connectors.connect_mysql import connect_mysql
+from database.db_connectors.connect_redis import connect_redis
+
 
 # DB config
 DB_HOST = "localhost"
@@ -66,15 +68,39 @@ products = get_products(offset, ITEMS_PER_PAGE)
 
 st.markdown(f"### Showing {offset + 1} to {min(offset + ITEMS_PER_PAGE, total_products)} of {total_products} products")
 
+
+
+redis_conn = connect_redis()
+if not redis_conn:
+    st.stop()
+
+cart_key = None
+if "username" not in st.session_state:
+    st.write("You must be logged in to add items to the cart.")
+else:
+    username = st.session_state["username"]
+    cart_key = f"cart:{username}"
+
+
+
+
 for product in products:
     with st.container():
         cols = st.columns([3, 7])
         with cols[0]:
-            st.image("./ressources/placeholder.png", use_container_width=True)
+            st.image("ressources/placeholder.png", use_container_width=True)
         with cols[1]:
-            st.subheader(f"Product #{product['product_id']}")
+            st.subheader(f"{product['description']}")
             st.write(f"**Price:** ${product['price']}")
-            st.write(product["description"])
-            if st.button(f"Add to cart - {product['product_id']}"):
-                st.success(f"Added product #{product['product_id']} to cart!")
-    st.markdown("---")
+            st.write(f"Product ID: {product['product_id']}")
+            if st.button("Add to cart", key=f"add_{product['product_id']}"):
+                if st.session_state.get("username") is None:
+                    st.error("You must be logged in to add items to the cart.")
+                else:
+                    redis_conn.hincrby(cart_key, product["product_id"], 1)
+                    redis_conn.expire(cart_key, 3600)  
+                    st.success(f"Added product #{product['product_id']} to cart!")
+
+
+
+
