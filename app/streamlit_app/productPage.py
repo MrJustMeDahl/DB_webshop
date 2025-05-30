@@ -1,80 +1,126 @@
 import streamlit as st
 from database.db_connectors.connect_mysql import connect_mysql
 
-# DB config
-DB_HOST = "localhost"
-DB_PORT = 7003
-DB_USER = "root"
-DB_PASSWORD = "rootpassword"
-DB_NAME = "webshop_db"
+DEFAULT_ITEMS_PER_PAGE = 10
+PAGE_SIZE_OPTIONS = [10, 25, 50]
 
-
-
-# Count total number of products
-def get_total_product_count():
+def get_products(limit, anchor_id, search_filter, direction):
     conn = connect_mysql()
-    if not conn:
-        return 0
-    cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM products")
-    count = cursor.fetchone()[0]
-    conn.close()
-    return count
-
-# Fetch products for a specific page
-def get_products(offset, limit):
-    conn = connect_mysql()
-    if not conn:
-        return []
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
-        "SELECT product_id, description, price FROM products LIMIT %s OFFSET %s",
-        (limit, offset)
+        "CALL pagination(%s, %s, %s, %s)",
+        (limit + 1, anchor_id, search_filter, direction)
     )
-    products = cursor.fetchall()
+    result = cursor.fetchall()
     conn.close()
-    return products
 
-# Streamlit UI
-st.title("Product Catalog")
+    has_more = len(result) > limit
+    products = result[:limit]
 
-# Pagination logic
-total_products = get_total_product_count()
+    if direction == "prev":
+        products.reverse()
 
-# Limiting the total products to 50 pr page
-ITEMS_PER_PAGE = 50
-total_pages = (total_products + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
+    return products, has_more
 
-# Track page number in session
-if "page_number" not in st.session_state:
-    st.session_state.page_number = 0
 
-# Pagination controls
-column_prev, col_space, next_column = st.columns([1, 8, 1])
+if "items_per_page" not in st.session_state:
+    st.session_state.items_per_page = DEFAULT_ITEMS_PER_PAGE
+if "search_filter" not in st.session_state:
+    st.session_state.search_filter = ""
+if "current_anchor" not in st.session_state:
+    st.session_state.current_anchor = ""
+if "products" not in st.session_state:
+    st.session_state.products, st.session_state.has_next = get_products(
+        st.session_state.items_per_page,
+        st.session_state.current_anchor,
+        st.session_state.search_filter,
+        "next"
+    )
+    st.session_state.has_prev = False
 
-with column_prev:
-    if st.button("Prev") and st.session_state.page_number > 0:
-        st.session_state.page_number -= 1
+col1, col2 = st.columns([2, 1])
+with col1:
+    search = st.text_input("Search description", st.session_state.search_filter)
+with col2:
+    page_size = st.selectbox("Items per page", PAGE_SIZE_OPTIONS, index=PAGE_SIZE_OPTIONS.index(st.session_state.items_per_page))
 
-with next_column:
-    if st.button("Next") and st.session_state.page_number < total_pages - 1:
-        st.session_state.page_number += 1
+col_prev, col_spacer, col_next = st.columns([1, 8, 1])
 
-# Show products
-offset = st.session_state.page_number * ITEMS_PER_PAGE
-products = get_products(offset, ITEMS_PER_PAGE)
+if search != st.session_state.search_filter or page_size != st.session_state.items_per_page:
+    st.session_state.search_filter = search
+    st.session_state.items_per_page = page_size
+    st.session_state.current_anchor = ""
+    st.session_state.products, st.session_state.has_next = get_products(
+        st.session_state.items_per_page,
+        "",
+        st.session_state.search_filter,
+        "next"
+    )
+    st.session_state.has_prev = False
+    st.rerun()
 
-st.markdown(f"### Showing {offset + 1} to {min(offset + ITEMS_PER_PAGE, total_products)} of {total_products} products")
+with col_prev:
+    if st.button("Prev", disabled=not st.session_state.has_prev):
+        first_id = st.session_state.products[0]["product_id"]
+        products, has_more = get_products(
+            st.session_state.items_per_page,
+            first_id,
+            st.session_state.search_filter,
+            "prev"
+        )
+        st.session_state.products = products
+        st.session_state.has_prev = has_more
+        st.session_state.has_next = True 
+        st.session_state.current_anchor = products[0]["product_id"]
+        st.rerun()
 
-for product in products:
-    with st.container():
-        cols = st.columns([3, 7])
-        with cols[0]:
-            st.image("./ressources/placeholder.png", use_container_width=True)
-        with cols[1]:
-            st.subheader(f"Product #{product['product_id']}")
-            st.write(f"**Price:** ${product['price']}")
-            st.write(product["description"])
-            if st.button(f"Add to cart - {product['product_id']}"):
-                st.success(f"Added product #{product['product_id']} to cart!")
-    st.markdown("---")
+with col_next:
+    if st.button("Next", disabled=not st.session_state.has_next):
+        last_id = st.session_state.products[-1]["product_id"]
+        products, has_more = get_products(
+            st.session_state.items_per_page,
+            last_id,
+            st.session_state.search_filter,
+            "next"
+        )
+        st.session_state.products = products
+        st.session_state.has_prev = True
+        st.session_state.has_next = has_more
+        st.session_state.current_anchor = products[0]["product_id"]
+        st.rerun()
+
+
+with st.container():
+    cols2 = st.columns([5, 5])
+    for index in range(st.session_state.products.__len__()):
+        product = st.session_state.products[index]
+        if index % 2 == 0:
+            with cols2[0]:
+                cols = st.columns([2, 3])
+                with cols[0]:
+                    st.image("./ressources/placeholder.png", use_container_width=True)
+                with cols[1]:
+                    st.subheader(product['description'])
+                    st.write(f"**Price:** ${product['price']}")
+                    st.write(f"Product # {product['product_id']}")
+                    if st.button(f"Add to cart - {product['product_id']}"):
+                        st.success(f"Added product #{product['product_id']} to cart!")
+                    if st.button("View product details", key=f"view_product_{index}"):
+                        st.session_state.chosen_product = product
+                        st.success(f"Navigate to Product page to view details!")
+                st.markdown("---")
+        else:
+            with cols2[1]: 
+                cols = st.columns([2, 3])   
+                with cols[0]:
+                    st.image("./ressources/placeholder.png", use_container_width=True)
+                with cols[1]:
+                    st.subheader(product['description'])
+                    st.write(f"**Price:** ${product['price']}")
+                    st.write(f"Product # {product['product_id']}")
+                    if st.button(f"Add to cart - {product['product_id']}"):
+                        st.success(f"Added product #{product['product_id']} to cart!")
+                    if st.button("View product details", key=f"view_product_{index}"):
+                        st.session_state.chosen_product = product
+                        st.success(f"Navigate to Product page to view details!")
+                st.markdown("---")

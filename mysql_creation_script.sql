@@ -180,6 +180,23 @@ END$$
 
 DELIMITER ;
 
+-- Views:
+DROP VIEW IF EXISTS `reviews_for_product`;
+USE `webshop_db`;
+CREATE 
+     OR REPLACE ALGORITHM = UNDEFINED 
+    DEFINER = `root`@`%` 
+    SQL SECURITY DEFINER
+VIEW `reviews_for_product` AS
+    SELECT 
+        `r`.`review_id` AS `review_id`,
+        `r`.`rating` AS `rating`,
+        `r`.`product_id` AS `product_id`,
+        `c`.`username` AS `username`
+    FROM
+        (`reviews` `r`
+        JOIN `customer` `c` ON ((`r`.`customer_id` = `c`.`customer_id`)));
+
 -- Data Insertion:
 
 LOCK TABLES `customer` WRITE;

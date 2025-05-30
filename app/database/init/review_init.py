@@ -6,8 +6,8 @@ import time
 
 def init_review_database():
 
-    MAX_RETRIES = 20
-    RETRY_DELAY = 3
+    MAX_RETRIES = 10
+    RETRY_DELAY = 10
     
     mysql_conn = connect_mysql()
     
