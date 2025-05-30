@@ -144,6 +144,7 @@ with st.container():
                             st.success(f"Added product #{product['product_id']} to cart!")
                     if st.button("View product details", key=f"view_product_{index}"):
                         st.session_state.chosen_product = product
+                        st.session_state.review_page = 0
                         st.success(f"Navigate to Product page to view details!")
                 st.markdown("---")
         else:
@@ -164,5 +165,6 @@ with st.container():
                             st.success(f"Added product #{product['product_id']} to cart!")
                     if st.button("View product details", key=f"view_product_{index}"):
                         st.session_state.chosen_product = product
+                        st.session_state.review_page = 0
                         st.success(f"Navigate to Product page to view details!")
                 st.markdown("---")

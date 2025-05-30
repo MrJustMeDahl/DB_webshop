@@ -3,11 +3,21 @@ from database.db_connectors.connect_mysql import connect_mysql
 from database.db_connectors.connect_mongodb import connect_mongodb
 from database.db_connectors.connect_redis import connect_redis
 from bson import ObjectId
+import json
 
 REVIEWS_PER_PAGE = 3
 
 
 def get_paginated_review_details(product_id, limit, offset):
+
+    cache_key = f"reviews:{product_id}:limit{limit}:offset{offset}"
+
+    redis_conn = connect_redis()
+    if redis_conn:
+        cached_data = redis_conn.get(cache_key)
+        if cached_data:
+            return json.loads(cached_data)
+
     conn = connect_mysql()
     cursor = conn.cursor()
     cursor.execute("""
@@ -18,6 +28,10 @@ def get_paginated_review_details(product_id, limit, offset):
     """, (product_id, limit, offset))
     result = cursor.fetchall()
     conn.close()
+
+    if redis_conn:
+        redis_conn.setex(cache_key, 3600, json.dumps(result))
+
     return result
 
 
@@ -38,6 +52,14 @@ def get_reviews_for_product(review_ids):
     if not review_ids:
         return []
 
+    redis_conn = connect_redis()
+    cache_key = f"review_texts:{','.join(sorted(review_ids))}"
+
+    if redis_conn:
+        cached_data = redis_conn.get(cache_key)
+        if cached_data:
+            return json.loads(cached_data)
+
     client = connect_mongodb()
     db = client["webshop_db"]
     collection = db["reviews"]
@@ -46,7 +68,22 @@ def get_reviews_for_product(review_ids):
     if not object_ids:
         return []
 
-    return list(collection.find({"_id": {"$in": object_ids}}))
+    results = list(collection.find({"_id": {"$in": object_ids}}))
+
+    # Convert ObjectId to string for JSON serialization
+    for r in results:
+        r["_id"] = str(r["_id"])
+
+    if redis_conn:
+        redis_conn.setex(cache_key, 3600, json.dumps(results))
+
+    return results
+
+def go_to_next_review_page():
+    st.session_state.review_page += 1
+
+def go_to_prev_review_page():
+    st.session_state.review_page -= 1
 
 
 if "chosen_product" in st.session_state:
@@ -115,14 +152,11 @@ if "chosen_product" in st.session_state:
         col1, col2, col3 = st.columns([1, 2, 1])
         with col1:
             if st.session_state.review_page > 0:
-                if st.button("⬅️ Previous"):
-                    st.session_state.review_page -= 1
-                    st.rerun()
+                st.button("Previous", on_click=go_to_prev_review_page)
+
         with col3:
             if (st.session_state.review_page + 1) * REVIEWS_PER_PAGE < total_reviews:
-                if st.button("Next ➡️"):
-                    st.session_state.review_page += 1
-                    st.rerun()
+                st.button("Next", on_click=go_to_next_review_page)
 
         with col2:
             current_page = st.session_state.review_page + 1
