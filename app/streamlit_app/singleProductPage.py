@@ -1,6 +1,7 @@
 import streamlit as st
 from database.db_connectors.connect_mysql import connect_mysql
 from database.db_connectors.connect_mongodb import connect_mongodb
+from database.db_connectors.connect_redis import connect_redis
 from bson import ObjectId
 
 REVIEWS_PER_PAGE = 3
@@ -51,6 +52,16 @@ def get_reviews_for_product(review_ids):
 if "chosen_product" in st.session_state:
     product = st.session_state.chosen_product
 
+    redis_conn = connect_redis()
+    if not redis_conn:
+        st.stop()
+    cart_key = None
+    if "username" not in st.session_state:
+        st.write("You must be logged in to add items to the cart.")
+    else:
+        username = st.session_state["username"]
+        cart_key = f"cart:{username}"
+
     if "review_page" not in st.session_state:
         st.session_state.review_page = 0
 
@@ -63,8 +74,13 @@ if "chosen_product" in st.session_state:
         st.subheader(product['description'])
         st.write(f"**Price:** ${product['price']}")
         st.write(f"Product # {product['product_id']}")
-        if st.button(f"Add to cart - {product['product_id']}"):
-            st.success(f"Added product #{product['product_id']} to cart!")
+        if st.button("Add to cart", key=f"add_{product['product_id']}"):
+            if st.session_state.get("username") is None:
+                st.error("You must be logged in to add items to the cart.")
+            else:
+                redis_conn.hincrby(cart_key, product["product_id"], 1)
+                redis_conn.expire(cart_key, 3600)  
+                st.success(f"Added product #{product['product_id']} to cart!")
 
     st.markdown("---")
     st.header("Customer Reviews")

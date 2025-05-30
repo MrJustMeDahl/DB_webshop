@@ -17,3 +17,8 @@ icon = ""
 path = "singleProductPage.py"
 name = "Product"
 icon = ""
+
+[[pages]]
+path = "cart.py"
+name = "Cart"
+icon = ""
