@@ -1,14 +1,7 @@
 import streamlit as st
 from database.db_connectors.connect_mysql import connect_mysql
 from database.db_connectors.connect_redis import connect_redis
-
-
-# DB config
-DB_HOST = "localhost"
-DB_PORT = 7003
-DB_USER = "root"
-DB_PASSWORD = "rootpassword"
-DB_NAME = "webshop_db"
+import json
 
 
 
@@ -24,10 +17,21 @@ def get_total_product_count():
     return count
 
 # Fetch products for a specific page
-def get_products(offset, limit):
-    conn = connect_mysql()
-    if not conn:
+def get_products(page_number, limit):
+    offset = page_number * limit
+    cache_key = f"products:page:{page_number}"
+
+    redis_conn = connect_redis()
+    if not redis_conn:
         return []
+
+    # Try getting from cache
+    cached = redis_conn.get(cache_key)
+    if cached:
+        return json.loads(cached)
+
+    # Fallback to MySQL
+    conn = connect_mysql()
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
         "SELECT product_id, description, price FROM products LIMIT %s OFFSET %s",
@@ -35,6 +39,10 @@ def get_products(offset, limit):
     )
     products = cursor.fetchall()
     conn.close()
+
+    # Cache results in Redis for 5 minutes
+    redis_conn.setex(cache_key, 300, json.dumps(products))
+
     return products
 
 # Streamlit UI
@@ -64,7 +72,8 @@ with next_column:
 
 # Show products
 offset = st.session_state.page_number * ITEMS_PER_PAGE
-products = get_products(offset, ITEMS_PER_PAGE)
+products = get_products(st.session_state.page_number, ITEMS_PER_PAGE)
+
 
 st.markdown(f"### Showing {offset + 1} to {min(offset + ITEMS_PER_PAGE, total_products)} of {total_products} products")
 

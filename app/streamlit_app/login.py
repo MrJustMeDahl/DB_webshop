@@ -14,8 +14,6 @@ def login(username, password):
     return user is not None
 
 
-# Streamlit UI
-st.title("Login")
 
 with st.form("login_form"):
     username = st.text_input("Username")
