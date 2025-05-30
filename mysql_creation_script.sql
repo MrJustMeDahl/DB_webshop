@@ -15,7 +15,7 @@ CREATE TABLE `customer` (
 DROP TABLE IF EXISTS `orders`;
 
 CREATE TABLE `orders` (
-  `order_id` int NOT NULL AUTO_INCREMENT,
+  `order_id` int NOT NULL,
   `order_date` varchar(45) NOT NULL,
   `total_price` float NOT NULL DEFAULT '0',
   `customer_id` int NOT NULL,
@@ -181,6 +181,7 @@ END$$
 DELIMITER ;
 
 
+
 DROP PROCEDURE IF EXISTS create_order_with_line;
 
 DELIMITER $$
@@ -193,14 +194,32 @@ CREATE PROCEDURE create_order_with_line(
     INOUT p_order_id INT
 )
 BEGIN
+    DECLARE new_order_id INT;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+    END;
+
+    START TRANSACTION;
+
     IF p_order_id = 0 THEN
-        INSERT INTO orders (customer_id) VALUES (p_customer_id);
-        SET p_order_id = LAST_INSERT_ID();
+        SELECT IFNULL(MAX(order_id), 0) + 1 INTO new_order_id FROM orders;
+
+        INSERT INTO orders (order_id, customer_id)
+        VALUES (new_order_id, p_customer_id);
+
+        SET p_order_id = new_order_id;
     END IF;
+
     INSERT INTO order_lines (order_id, product_id, quantity, price)
     VALUES (p_order_id, p_product_id, p_quantity, p_price);
+
+    COMMIT;
 END$$
+
 DELIMITER ;
+
 
 
 DROP PROCEDURE IF EXISTS create_payment;
