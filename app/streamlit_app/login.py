@@ -1,18 +1,21 @@
 import streamlit as st
 from database.db_connectors.connect_mysql import connect_mysql
 
-
-
 def login(username, password):
     conn = connect_mysql()
     if not conn:
         return False
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM customer WHERE username=%s AND password=%s", (username, password))
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT customer_id, username FROM customer WHERE username=%s AND password=%s", (username, password))
     user = cursor.fetchone()
     conn.close()
-    return user is not None
 
+    if user:
+        st.session_state.logged_in = True
+        st.session_state.username = user["username"]
+        st.session_state.user_id = user["customer_id"]
+        return True
+    return False
 
 
 with st.form("login_form"):
@@ -22,9 +25,7 @@ with st.form("login_form"):
 
     if submit:
         if login(username, password):
-            st.session_state.logged_in = True
-            st.session_state.username = username
             st.success("Login successful!")
-            st.info("Now navigate to 'Document Manager' from the sidebar.")
+            st.info("Now navigate to 'Webshop' or 'Cart' from the sidebar.")
         else:
             st.error("Invalid username or password.")

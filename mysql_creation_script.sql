@@ -15,7 +15,7 @@ CREATE TABLE `customer` (
 DROP TABLE IF EXISTS `orders`;
 
 CREATE TABLE `orders` (
-  `order_id` int NOT NULL,
+  `order_id` int NOT NULL AUTO_INCREMENT,
   `order_date` varchar(45) NOT NULL,
   `total_price` float NOT NULL DEFAULT '0',
   `customer_id` int NOT NULL,
@@ -179,6 +179,61 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS create_order_with_line;
+
+DELIMITER $$
+USE `webshop_db`$$
+CREATE PROCEDURE create_order_with_line(
+    IN p_customer_id INT,
+    IN p_product_id VARCHAR(20),
+    IN p_quantity INT,
+    IN p_price FLOAT,
+    INOUT p_order_id INT
+)
+BEGIN
+    IF p_order_id = 0 THEN
+        INSERT INTO orders (customer_id) VALUES (p_customer_id);
+        SET p_order_id = LAST_INSERT_ID();
+    END IF;
+    INSERT INTO order_lines (order_id, product_id, quantity, price)
+    VALUES (p_order_id, p_product_id, p_quantity, p_price);
+END$$
+DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS create_payment;
+
+DELIMITER $$
+USE `webshop_db`$$
+CREATE PROCEDURE create_payment(IN p_order_id INT)
+BEGIN
+    INSERT INTO payments (order_id)
+    VALUES (p_order_id);
+END$$
+
+DELIMITER ;
+
+
+
+-- Views
+
+use webshop_db;
+
+CREATE OR REPLACE VIEW unpaid_orders_view AS
+SELECT o.order_id, o.order_date, o.total_price, o.customer_id
+FROM orders o
+LEFT JOIN payments p ON o.order_id = p.order_id
+WHERE p.payment_id IS NULL;
+
+
+use webshop_db;
+
+CREATE OR REPLACE VIEW paid_orders_view AS
+SELECT o.order_id, o.order_date, o.total_price, o.customer_id, p.date_paid
+FROM orders o
+JOIN payments p ON o.order_id = p.order_id;
 
 -- Data Insertion:
 
