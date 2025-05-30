@@ -36,7 +36,7 @@ if not unpaid_orders:
     st.info("You have no unpaid orders.")
 else:
     for order in unpaid_orders:
-        with st.expander(f"Order #{order['order_id']} • Total: ${order['total_price']:.2f} • Date: {order['order_date']}"):
+        with st.expander(f"Order #{order['order_id']}   -   Total: ${order['total_price']:.2f}   -   Date: {order['order_date']}"):
             cursor.execute("""
                 SELECT p.description, ol.quantity, ol.price
                 FROM order_lines ol

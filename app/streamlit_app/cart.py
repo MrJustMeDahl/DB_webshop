@@ -16,7 +16,7 @@ if not redis_conn:
     st.error("Could not connect to Redis.")
     st.stop()
 
-st.title("🛒 Your Cart")
+st.title("Your Cart")
 
 # Load cart data
 cart = redis_conn.hgetall(cart_key)
@@ -36,7 +36,7 @@ else:
             total += subtotal
             st.subheader(f"{product['description']} (x{quantity})")
             st.write(f"Price: ${product['price']} | Subtotal: ${subtotal:.2f}")
-            if st.button(f"Remove {product_id}", key=f"remove_{product_id}"):
+            if st.button(f"Remove", key=f"remove_{product_id}"):
                 redis_conn.hdel(cart_key, product_id)
                 st.rerun()
 
@@ -80,10 +80,10 @@ else:
 
             conn.commit()
             redis_conn.delete(cart_key)
-            st.success(f"✅ Order placed successfully! Your Order ID is #{order_id}")
+            st.success(f"Order placed successfully! Your Order ID is #{order_id}")
 
         except Exception as e:
             conn.rollback()
-            st.error(f"❌ Checkout failed: {e}")
+            st.error(f"Checkout failed: {e}")
         finally:
             conn.close()
