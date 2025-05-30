@@ -22,3 +22,8 @@ icon = ""
 path = "cart.py"
 name = "Cart"
 icon = ""
+
+[[pages]]
+path = "admin.py"
+name = "Admin Dashboard"
+icon = ""
