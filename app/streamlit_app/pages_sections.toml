@@ -10,7 +10,12 @@ icon = ""
 
 [[pages]]
 path = "productPage.py"
-name = "Webshop"
+name = "Product Catalog"
+icon = ""
+
+[[pages]]
+path = "singleProductPage.py"
+name = "Product"
 icon = ""
 
 [[pages]]

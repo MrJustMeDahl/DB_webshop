@@ -26,6 +26,7 @@ with st.form("login_form"):
     if submit:
         if login(username, password):
             st.success("Login successful!")
-            st.info("Now navigate to 'Webshop' or 'Cart' from the sidebar.")
+
+            st.info("You can now add items to your cart and make purchases.")
         else:
             st.error("Invalid username or password.")

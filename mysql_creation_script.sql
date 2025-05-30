@@ -181,7 +181,6 @@ END$$
 DELIMITER ;
 
 
-
 DROP PROCEDURE IF EXISTS create_order_with_line;
 
 DELIMITER $$
@@ -253,6 +252,24 @@ CREATE OR REPLACE VIEW paid_orders_view AS
 SELECT o.order_id, o.order_date, o.total_price, o.customer_id, p.date_paid
 FROM orders o
 JOIN payments p ON o.order_id = p.order_id;
+
+
+DROP VIEW IF EXISTS `reviews_for_product`;
+USE `webshop_db`;
+CREATE 
+     OR REPLACE ALGORITHM = UNDEFINED 
+    DEFINER = `root`@`%` 
+    SQL SECURITY DEFINER
+VIEW `reviews_for_product` AS
+    SELECT 
+        `r`.`review_id` AS `review_id`,
+        `r`.`rating` AS `rating`,
+        `r`.`product_id` AS `product_id`,
+        `c`.`username` AS `username`
+    FROM
+        (`reviews` `r`
+        JOIN `customer` `c` ON ((`r`.`customer_id` = `c`.`customer_id`)));
+
 
 -- Data Insertion:
 

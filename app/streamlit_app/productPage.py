@@ -3,81 +3,113 @@ from database.db_connectors.connect_mysql import connect_mysql
 from database.db_connectors.connect_redis import connect_redis
 import json
 
+DEFAULT_ITEMS_PER_PAGE = 10
+PAGE_SIZE_OPTIONS = [10, 25, 50]
 
-
-# Count total number of products
-def get_total_product_count():
-    conn = connect_mysql()
-    if not conn:
-        return 0
-    cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM products")
-    count = cursor.fetchone()[0]
-    conn.close()
-    return count
-
-# Fetch products for a specific page
-def get_products(page_number, limit):
-    offset = page_number * limit
-    cache_key = f"products:page:{page_number}"
-
+def get_products(limit, anchor_id, search_filter, direction):
     redis_conn = connect_redis()
     if not redis_conn:
-        return []
+        print("Redis connection failed.")
+        return [], False
 
-    # Try getting from cache
+    normalized_filter = (search_filter or "").strip().lower()
+    cache_key = f"products:{normalized_filter}:{anchor_id}:{direction}:{limit}"
+
     cached = redis_conn.get(cache_key)
     if cached:
-        return json.loads(cached)
+        data = json.loads(cached)
+        return data["products"], data["has_more"]
 
-    # Fallback to MySQL
     conn = connect_mysql()
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
-        "SELECT product_id, description, price FROM products LIMIT %s OFFSET %s",
-        (limit, offset)
+        "CALL pagination(%s, %s, %s, %s)",
+        (limit + 1, anchor_id, search_filter, direction)
     )
-    products = cursor.fetchall()
+    result = cursor.fetchall()
     conn.close()
 
-    # Cache results in Redis for 5 minutes
-    redis_conn.setex(cache_key, 300, json.dumps(products))
+    has_more = len(result) > limit
+    products = result[:limit]
 
-    return products
+    if direction == "prev":
+        products.reverse()
 
-# Streamlit UI
-st.title("Product Catalog")
+    # Cache result for 5 minutes
+    redis_conn.setex(cache_key, 300, json.dumps({
+        "products": products,
+        "has_more": has_more
+    }))
 
-# Pagination logic
-total_products = get_total_product_count()
-
-# Limiting the total products to 50 pr page
-ITEMS_PER_PAGE = 50
-total_pages = (total_products + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
-
-# Track page number in session
-if "page_number" not in st.session_state:
-    st.session_state.page_number = 0
-
-# Pagination controls
-column_prev, col_space, next_column = st.columns([1, 8, 1])
-
-with column_prev:
-    if st.button("Prev") and st.session_state.page_number > 0:
-        st.session_state.page_number -= 1
-
-with next_column:
-    if st.button("Next") and st.session_state.page_number < total_pages - 1:
-        st.session_state.page_number += 1
-
-# Show products
-offset = st.session_state.page_number * ITEMS_PER_PAGE
-products = get_products(st.session_state.page_number, ITEMS_PER_PAGE)
+    return products, has_more
 
 
-st.markdown(f"### Showing {offset + 1} to {min(offset + ITEMS_PER_PAGE, total_products)} of {total_products} products")
 
+if "items_per_page" not in st.session_state:
+    st.session_state.items_per_page = DEFAULT_ITEMS_PER_PAGE
+if "search_filter" not in st.session_state:
+    st.session_state.search_filter = ""
+if "current_anchor" not in st.session_state:
+    st.session_state.current_anchor = ""
+if "products" not in st.session_state:
+    st.session_state.products, st.session_state.has_next = get_products(
+        st.session_state.items_per_page,
+        st.session_state.current_anchor,
+        st.session_state.search_filter,
+        "next"
+    )
+    st.session_state.has_prev = False
 
+col1, col2 = st.columns([2, 1])
+with col1:
+    search = st.text_input("Search description", st.session_state.search_filter)
+with col2:
+    page_size = st.selectbox("Items per page", PAGE_SIZE_OPTIONS, index=PAGE_SIZE_OPTIONS.index(st.session_state.items_per_page))
+
+col_prev, col_spacer, col_next = st.columns([1, 8, 1])
+
+if search != st.session_state.search_filter or page_size != st.session_state.items_per_page:
+    st.session_state.search_filter = search
+    st.session_state.items_per_page = page_size
+    st.session_state.current_anchor = ""
+    st.session_state.products, st.session_state.has_next = get_products(
+        st.session_state.items_per_page,
+        "",
+        st.session_state.search_filter,
+        "next"
+    )
+    st.session_state.has_prev = False
+    st.rerun()
+
+with col_prev:
+    if st.button("Prev", disabled=not st.session_state.has_prev):
+        first_id = st.session_state.products[0]["product_id"]
+        products, has_more = get_products(
+            st.session_state.items_per_page,
+            first_id,
+            st.session_state.search_filter,
+            "prev"
+        )
+        st.session_state.products = products
+        st.session_state.has_prev = has_more
+        st.session_state.has_next = True 
+        st.session_state.current_anchor = products[0]["product_id"]
+        st.rerun()
+
+with col_next:
+    if st.button("Next", disabled=not st.session_state.has_next):
+        last_id = st.session_state.products[-1]["product_id"]
+        products, has_more = get_products(
+            st.session_state.items_per_page,
+            last_id,
+            st.session_state.search_filter,
+            "next"
+        )
+        st.session_state.products = products
+        st.session_state.has_prev = True
+        st.session_state.has_next = has_more
+        st.session_state.current_anchor = products[0]["product_id"]
+        st.rerun()
 
 redis_conn = connect_redis()
 if not redis_conn:
@@ -90,26 +122,49 @@ else:
     username = st.session_state["username"]
     cart_key = f"cart:{username}"
 
-
-
-
-for product in products:
-    with st.container():
-        cols = st.columns([3, 7])
-        with cols[0]:
-            st.image("ressources/placeholder.png", use_container_width=True)
-        with cols[1]:
-            st.subheader(f"{product['description']}")
-            st.write(f"**Price:** ${product['price']}")
-            st.write(f"Product ID: {product['product_id']}")
-            if st.button("Add to cart", key=f"add_{product['product_id']}"):
-                if st.session_state.get("username") is None:
-                    st.error("You must be logged in to add items to the cart.")
-                else:
-                    redis_conn.hincrby(cart_key, product["product_id"], 1)
-                    redis_conn.expire(cart_key, 3600)  
-                    st.success(f"Added product #{product['product_id']} to cart!")
-
-
-
-
+with st.container():
+    cols2 = st.columns([5, 5])
+    for index in range(st.session_state.products.__len__()):
+        product = st.session_state.products[index]
+        if index % 2 == 0:
+            with cols2[0]:
+                cols = st.columns([2, 3])
+                with cols[0]:
+                    st.image("./ressources/placeholder.png", use_container_width=True)
+                with cols[1]:
+                    st.subheader(product['description'])
+                    st.write(f"**Price:** ${product['price']}")
+                    st.write(f"Product # {product['product_id']}")
+                    if st.button("Add to cart", key=f"add_{product['product_id']}"):
+                        if st.session_state.get("username") is None:
+                            st.error("You must be logged in to add items to the cart.")
+                        else:
+                            redis_conn.hincrby(cart_key, product["product_id"], 1)
+                            redis_conn.expire(cart_key, 3600)  
+                            st.success(f"Added product #{product['product_id']} to cart!")
+                    if st.button("View product details", key=f"view_product_{index}"):
+                        st.session_state.chosen_product = product
+                        st.session_state.review_page = 0
+                        st.success(f"Navigate to Product page to view details!")
+                st.markdown("---")
+        else:
+            with cols2[1]: 
+                cols = st.columns([2, 3])   
+                with cols[0]:
+                    st.image("./ressources/placeholder.png", use_container_width=True)
+                with cols[1]:
+                    st.subheader(product['description'])
+                    st.write(f"**Price:** ${product['price']}")
+                    st.write(f"Product # {product['product_id']}")
+                    if st.button("Add to cart", key=f"add_{product['product_id']}"):
+                        if st.session_state.get("username") is None:
+                            st.error("You must be logged in to add items to the cart.")
+                        else:
+                            redis_conn.hincrby(cart_key, product["product_id"], 1)
+                            redis_conn.expire(cart_key, 3600)  
+                            st.success(f"Added product #{product['product_id']} to cart!")
+                    if st.button("View product details", key=f"view_product_{index}"):
+                        st.session_state.chosen_product = product
+                        st.session_state.review_page = 0
+                        st.success(f"Navigate to Product page to view details!")
+                st.markdown("---")
