@@ -7,7 +7,7 @@ services:
     volumes:
       - ./app:/app
     working_dir: /app
-    command: /bin/bash -c "python3 -m database.init.review_init && python3 -m streamlit run streamlit_app/start.py --server.port=8501 --server.headless=true"
+    command: /bin/bash -c "python3 -m database.init.review_init && tail -f /dev/null"
     ports:
       - "8501:8501"
     environment:
