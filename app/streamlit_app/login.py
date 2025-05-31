@@ -6,7 +6,7 @@ def login(username, password):
     if not conn:
         return False
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT customer_id, username FROM customer WHERE username=%s AND password=%s", (username, password))
+    cursor.execute("SELECT customer_id, username FROM customer WHERE username=%s AND password=%s AND is_active=TRUE", (username, password))
     user = cursor.fetchone()
     conn.close()
 

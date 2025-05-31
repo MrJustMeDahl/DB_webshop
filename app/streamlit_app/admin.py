@@ -1,5 +1,5 @@
 import streamlit as st
-from database.db_functionality.user_functionality import find_by_id, update_username_password
+from database.db_functionality.user_functionality import find_active_by_id, update_username_password, soft_delete_user
 
 if "username" not in st.session_state:
     st.warning("You must be logged in to access this page.")
@@ -17,7 +17,7 @@ else:
             st.subheader("User Management")
             user_id = st.text_input("Enter User ID to find user details:")
             if user_id:
-                user = find_by_id(user_id)
+                user = find_active_by_id(user_id)
                 if user:
                     st.session_state.chosen_user = user['customer_id']
                 else:
@@ -43,6 +43,13 @@ else:
                         else:
                             st.error("Failed to update user.")
                 with user_tabs[2]:
-                    st.write("User deletion functionality will be implemented here.")
+                    st.write("Are you sure you want to delete this user?")
+                    if st.button("Delete User"):
+                        if soft_delete_user(st.session_state.chosen_user):
+                            st.success("User deleted successfully.")
+                            st.session_state.chosen_user = None
+                            st.rerun()
+                        else:
+                            st.error("Failed to delete user.")
         with tabs[3]:
             st.write("Order management features will be implemented here.")
