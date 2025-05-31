@@ -20,15 +20,27 @@ def find_by_id(user_id):
     return None
 
 def update_username_password(user_id, new_username, new_password):
+    if not new_username:
+        new_username = None
+    if not new_password:
+        new_password = None
+
     mysql_conn = connect_mysql()
     if not mysql_conn:
         return False
 
     cursor = mysql_conn.cursor()
-    cursor.execute("UPDATE customer SET username = %s, password = %s WHERE customer_id = %s",
-                   (new_username, new_password, user_id))
-    mysql_conn.commit()
+    cursor.callproc("update_customer_credentials", (user_id, new_username, new_password))
+    result_data = None
+    for result in cursor.stored_results():
+        result = result.fetchone()
+        if result[0] == "no_changes":
+            result_data = "no_changes"
+        else:
+            result_data = {
+                "customer_id": result[0],
+                "username": result[1],
+            }
     cursor.close()
     mysql_conn.close()
-
-    return True
+    return result_data

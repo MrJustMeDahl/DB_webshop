@@ -34,8 +34,12 @@ else:
                     new_username = st.text_input("New Username", value=user['username'])
                     new_password = st.text_input("New Password", type="password")
                     if st.button("Update User"):
-                        if update_username_password(st.session_state.chosen_user, new_username, new_password):
+                        update_result = update_username_password(st.session_state.chosen_user, new_username, new_password)
+                        if update_result == "no_changes":
+                            st.info("No changes were made.")
+                        elif update_result:
                             st.success("User updated successfully.")
+                            user = update_result
                         else:
                             st.error("Failed to update user.")
                 with user_tabs[2]:

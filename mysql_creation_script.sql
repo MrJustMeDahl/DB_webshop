@@ -234,6 +234,51 @@ END$$
 DELIMITER ;
 
 
+DROP PROCEDURE IF EXISTS update_customer_credentials;
+DELIMITER $$
+
+CREATE PROCEDURE update_customer_credentials(
+    IN _customer_id INT,
+    IN _new_username VARCHAR(255),
+    IN _new_password VARCHAR(255)
+)
+BEGIN
+    DECLARE _current_username VARCHAR(255);
+    DECLARE _current_password VARCHAR(255);
+    DECLARE _changed BOOLEAN DEFAULT FALSE;
+
+    START TRANSACTION;
+
+    SELECT username, password INTO _current_username, _current_password
+    FROM customer
+    WHERE customer_id = _customer_id
+    FOR UPDATE;
+
+    IF _new_username IS NOT NULL AND _new_username <> _current_username THEN
+        UPDATE customer
+        SET username = _new_username
+        WHERE customer_id = _customer_id;
+        SET _changed = TRUE;
+    END IF;
+
+    IF _new_password IS NOT NULL AND _new_password <> _current_password THEN
+        UPDATE customer
+        SET password = _new_password
+        WHERE customer_id = _customer_id;
+        SET _changed = TRUE;
+    END IF;
+
+    COMMIT;
+
+    IF _changed THEN
+        SELECT * FROM customer WHERE customer_id = _customer_id;
+    ELSE
+        SELECT 'no_changes' AS status;
+    END IF;
+END$$
+
+DELIMITER ;
+
 
 -- Views
 
