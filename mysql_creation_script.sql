@@ -180,7 +180,80 @@ END$$
 
 DELIMITER ;
 
--- Views:
+
+DROP PROCEDURE IF EXISTS create_order_with_line;
+
+DELIMITER $$
+USE `webshop_db`$$
+CREATE PROCEDURE create_order_with_line(
+    IN p_customer_id INT,
+    IN p_product_id VARCHAR(20),
+    IN p_quantity INT,
+    IN p_price FLOAT,
+    INOUT p_order_id INT
+)
+BEGIN
+    DECLARE new_order_id INT;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+    END;
+
+    START TRANSACTION;
+
+    IF p_order_id = 0 THEN
+        SELECT IFNULL(MAX(order_id), 0) + 1 INTO new_order_id FROM orders;
+
+        INSERT INTO orders (order_id, customer_id)
+        VALUES (new_order_id, p_customer_id);
+
+        SET p_order_id = new_order_id;
+    END IF;
+
+    INSERT INTO order_lines (order_id, product_id, quantity, price)
+    VALUES (p_order_id, p_product_id, p_quantity, p_price);
+
+    COMMIT;
+END$$
+
+DELIMITER ;
+
+
+
+DROP PROCEDURE IF EXISTS create_payment;
+
+DELIMITER $$
+USE `webshop_db`$$
+CREATE PROCEDURE create_payment(IN p_order_id INT)
+BEGIN
+    INSERT INTO payments (order_id)
+    VALUES (p_order_id);
+END$$
+
+DELIMITER ;
+
+
+
+-- Views
+
+use webshop_db;
+
+CREATE OR REPLACE VIEW unpaid_orders_view AS
+SELECT o.order_id, o.order_date, o.total_price, o.customer_id
+FROM orders o
+LEFT JOIN payments p ON o.order_id = p.order_id
+WHERE p.payment_id IS NULL;
+
+
+use webshop_db;
+
+CREATE OR REPLACE VIEW paid_orders_view AS
+SELECT o.order_id, o.order_date, o.total_price, o.customer_id, p.date_paid
+FROM orders o
+JOIN payments p ON o.order_id = p.order_id;
+
+
 DROP VIEW IF EXISTS `reviews_for_product`;
 USE `webshop_db`;
 CREATE 
@@ -196,6 +269,7 @@ VIEW `reviews_for_product` AS
     FROM
         (`reviews` `r`
         JOIN `customer` `c` ON ((`r`.`customer_id` = `c`.`customer_id`)));
+
 
 -- Data Insertion:
 
