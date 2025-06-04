@@ -8,7 +8,7 @@ else:
     if st.session_state.username != "admin":
         st.warning("You must be an admin to access this page.")
     else:
-        tabs = st.tabs(["Statistics", "Manage Products", "Manage Users", "View Orders"])
+        tabs = st.tabs(["Statistics", "Manage Products", "Manage Users"])
 
         with tabs[0]:
             st.write("Statistics will be displayed here.")
@@ -16,5 +16,4 @@ else:
             display_product_management()
         with tabs[2]:
             display_user_management()
-        with tabs[3]:
-            st.write("Order management features will be implemented here.")
+

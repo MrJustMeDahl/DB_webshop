@@ -1,38 +1,11 @@
 import streamlit as st
-from database.db_connectors.connect_mysql import connect_mysql
 from database.db_functionality.redis_functionality import (
-    get_cached_products, cache_products, get_redis_connection, add_to_cart
+    get_redis_connection, add_to_cart
 )
-import json
+from database.db_functionality.product_functionality import get_products
 
 DEFAULT_ITEMS_PER_PAGE = 10
 PAGE_SIZE_OPTIONS = [10, 25, 50]
-
-def get_products(limit, anchor_id, search_filter, direction):
-    normalized_filter = (search_filter or "").strip().lower()
-    cache_key = f"products:{normalized_filter}:{anchor_id}:{direction}:{limit}"
-
-    cached_products, has_more = get_cached_products(cache_key)
-    if cached_products is not None:
-        return cached_products, has_more
-
-    conn = connect_mysql()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute(
-        "CALL pagination(%s, %s, %s, %s)",
-        (limit + 1, anchor_id, search_filter, direction)
-    )
-    result = cursor.fetchall()
-    conn.close()
-
-    has_more = len(result) > limit
-    products = result[:limit]
-
-    if direction == "prev":
-        products.reverse()
-
-    cache_products(cache_key, products, has_more)
-    return products, has_more
 
 
 # Session state init

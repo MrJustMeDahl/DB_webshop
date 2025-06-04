@@ -41,3 +41,11 @@ def cache_products(cache_key, products, has_more, ttl=300):
             "products": products,
             "has_more": has_more
         }))
+
+def clear_product_cache():
+    redis_conn = get_redis_connection()
+    if redis_conn:
+        for key in redis_conn.scan_iter("products:*"):
+            redis_conn.delete(key)
+    else:
+        print("Redis connection failed, cannot clear product cache.")
