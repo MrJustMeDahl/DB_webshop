@@ -9,6 +9,10 @@ This project uses the following databases:
 - Mongodb
 - Redis
 
+### Link to the Synopsis
+
+[DB Synopsis](DB_Webshop%20Exam%20Synopsis.pdf)
+
 ### Setup of the containers
 
 \***_Note all of the commands should be run from the root of the project!_**
