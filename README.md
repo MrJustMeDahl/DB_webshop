@@ -20,16 +20,6 @@ docker compose down
 docker compose up --build -d
 ```
 
-### Mysql setup
-
-The Mysql data and structure is saved in a "dump file".
-Firstly connect to your mysql db that is spun up by the docker container on `7003:3306`
-To insert the tables, procedures, triggers and data, execute the following file in mysql workbench:
-
-```
-mysql_creation_script.sql
-```
-
 ### Using the Streamlit application
 
 The docker container should have spun up a streamlit application on port 8501
